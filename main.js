@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const axios = require('axios');
 const config = require('./config.json');
 
@@ -53,7 +54,7 @@ const onPowerUpdate = status => {
 
 (async () => {
     const app = express();
-    app.use(express.json());
+    app.use(express.json(), cors({origin: config.corsOrigin}));
     
     app.post('/power', (req, res) => {
         log('Power notification:', req.body);
