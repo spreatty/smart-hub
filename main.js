@@ -3,7 +3,7 @@ const cors = require('cors');
 const axios = require('axios');
 const config = require('./config.json');
 
-const log = (...args) => console.log(new Date().toISOString().slice(0, -1).replace('T', ' '), ...args);
+const log = (...args) => console.log(new Date().toLocaleString(), ...args);
 
 var isAcOn = process.argv[2] == 'on';
 var isAcDesiredOn = isAcOn;
