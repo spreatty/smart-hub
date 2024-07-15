@@ -4,9 +4,9 @@ const config = require('./config.json');
 
 const log = (...args) => console.log(new Date().toISOString().slice(0, -1).replace('T', ' '), ...args);
 
-const isAcOn = process.argv[2] == 'on';
-const isAcDesiredOn = isAcOn;
-const isPowerOn = process.argv[3] == 'on';
+var isAcOn = process.argv[2] == 'on';
+var isAcDesiredOn = isAcOn;
+var isPowerOn = process.argv[3] == 'on';
 log('AC state:', isAcOn ? 'on' : 'off');
 log('Power state:', isPowerOn ? 'on' : 'off');
 
