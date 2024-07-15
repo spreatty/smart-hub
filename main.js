@@ -68,7 +68,7 @@ const onPowerUpdate = status => {
             if (await switchAC(true))
                 isAcOn = true;
         }
-        res.sendStatus(201);
+        res.send({power: isPowerOn, ac: isAcOn});
     });
 
     app.post('/acoff', async (req, res) => {
@@ -77,7 +77,7 @@ const onPowerUpdate = status => {
             if (await switchAC(false))
                 isAcOn = false;
         }
-        res.sendStatus(201);
+        res.send({ac: isAcOn});
     });
 
     try {
