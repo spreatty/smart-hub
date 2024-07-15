@@ -62,7 +62,7 @@ const onPowerUpdate = status => {
         res.sendStatus(201);
     });
 
-    app.post('/status', (req, res) => {
+    app.get('/status', (req, res) => {
         res.send({ power: isPowerOn, ac: isAcOn, acDesired: isAcDesiredOn });
     });
 
