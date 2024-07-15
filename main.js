@@ -62,6 +62,10 @@ const onPowerUpdate = status => {
         res.sendStatus(201);
     });
 
+    app.post('/status', (req, res) => {
+        res.send({ power: isPowerOn, ac: isAcOn, acDesired: isAcDesiredOn });
+    });
+
     app.post('/acon', async (req, res) => {
         log('AC on intent')
         let status = 'already';
