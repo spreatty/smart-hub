@@ -7,9 +7,14 @@ const log = (...args) => console.log(new Date().toISOString().slice(0, -1).repla
 
 var isAcOn = process.argv[2] == 'on';
 var isAcDesiredOn = isAcOn;
-var isPowerOn = process.argv[3] == 'on';
+const powerUpdates = ['powerOff', 'powerBackup', 'powerMain'];
+const powerOff = 0, powerBackup = 1, powerMain = 2;
+const powerStates = ['off', 'backup', 'main'];
+var powerState = powerStates.indexOf(process.argv[3]);
+if (powerState == -1)
+    powerState = powerOff;
 log('AC state:', isAcOn ? 'on' : 'off');
-log('Power state:', isPowerOn ? 'on' : 'off');
+log('Power state:', powerStates[powerState]);
 
 const switchAC = async on => {
     const acState = on ? 'on' : 'off';
@@ -42,12 +47,10 @@ const onPowerOff = async () => {
     }
 };
 
-const onPowerUpdate = status => {
-    if (status == 'powerOn') {
-        isPowerOn = true;
+const onPowerUpdate = () => {
+    if (powerState == powerMain) {
         onPowerOn();
-    } else if (status == 'powerOff') {
-        isPowerOn = false;
+    } else if (powerState == powerOff) {
         onPowerOff();
     }
 };
@@ -58,20 +61,23 @@ const onPowerUpdate = status => {
     
     app.post('/power', (req, res) => {
         log('Power notification:', req.body);
-        if (req.body.status)
-            onPowerUpdate(req.body.status);
+        const newState = powerUpdates.indexOf(req.body.status);
+        if (newState != -1) {
+            powerState = newState;
+            onPowerUpdate();
+        }
         res.sendStatus(201);
     });
 
     app.get('/status', (req, res) => {
-        res.send({ power: isPowerOn, ac: isAcOn, acDesired: isAcDesiredOn });
+        res.send({ power: powerStates[powerState], ac: isAcOn, acDesired: isAcDesiredOn });
     });
 
     app.post('/acon', async (req, res) => {
         log('AC on intent')
         let status = 'already';
         isAcDesiredOn = true;
-        if (!isAcOn && isPowerOn) {
+        if (!isAcOn && powerState == powerMain) {
             log('Switching is needed and possible')
             if (await switchAC(true)) {
                 isAcOn = true;
@@ -81,7 +87,7 @@ const onPowerUpdate = status => {
                 status = 'fail'
                 log('Failed switching on');
             }
-        } else if (!isPowerOn) {
+        } else if (powerState != powerMain) {
             status = 'scheduled';
             log('No power for AC yet');
         }
