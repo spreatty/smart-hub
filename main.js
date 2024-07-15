@@ -63,21 +63,42 @@ const onPowerUpdate = status => {
     });
 
     app.post('/acon', async (req, res) => {
+        log('AC on intent')
+        let status = 'already';
         isAcDesiredOn = true;
         if (!isAcOn && isPowerOn) {
-            if (await switchAC(true))
+            log('Switching is needed and possible')
+            if (await switchAC(true)) {
                 isAcOn = true;
+                status = 'success';
+                log('Successfully switched on');
+            } else {
+                status = 'fail'
+                log('Failed switching on');
+            }
+        } else if (!isPowerOn) {
+            status = 'scheduled';
+            log('No power for AC yet');
         }
-        res.send({power: isPowerOn, ac: isAcOn});
+        res.send({status});
     });
 
     app.post('/acoff', async (req, res) => {
+        log('AC off intent')
+        let status = 'already';
         isAcDesiredOn = false;
         if (isAcOn) {
-            if (await switchAC(false))
+            log('Switching is needed')
+            if (await switchAC(false)) {
                 isAcOn = false;
+                status = 'success';
+                log('Successfully switched off');
+            } else {
+                status = 'fail'
+                log('Failed switching off');
+            }
         }
-        res.send({ac: isAcOn});
+        res.send({status});
     });
 
     try {
