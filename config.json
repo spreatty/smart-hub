@@ -1,6 +1,6 @@
 {
     "port": 8100,
-    "corsOrigin": ["http://192.168.2.58:8000", "http://127.0.0.1:8000", "http://localhost:8000"],
-    "acOnUrl": "http://127.0.0.1:8090/on",
-    "acOffUrl": "http://127.0.0.1:8090/off"
+    "corsOrigin": ["http://192.168.2.3:8040", "http://10.0.0.2:8040", "http://127.0.0.1:8040", "http://localhost:8040"],
+    "acOnUrl": "http://127.0.0.1:8090/off",
+    "acOffUrl": "http://127.0.0.1:8090/on"
 }

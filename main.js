@@ -5,14 +5,14 @@ const config = require('./config.json');
 
 const log = (...args) => console.log(new Date().toLocaleString(), ...args);
 
-var isAcOn = process.argv[2] == 'on';
-var isAcDesiredOn = isAcOn;
 const powerUpdates = ['powerOff', 'powerBackup', 'powerMain'];
 const powerOff = 0, powerBackup = 1, powerMain = 2;
 const powerStates = ['off', 'backup', 'main'];
-var powerState = powerStates.indexOf(process.argv[3]);
+var powerState = powerStates.indexOf(process.argv[2]);
 if (powerState == -1)
     powerState = powerOff;
+var isAcOn = process.argv[3] == 'on';
+var isAcDesiredOn = isAcOn;
 log('AC state:', isAcOn ? 'on' : 'off');
 log('Power state:', powerStates[powerState]);
 
