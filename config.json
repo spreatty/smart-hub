@@ -1,6 +1,8 @@
 {
+    "notificationUrls": ["http://127.0.0.1:8101/ac"],
     "port": 8100,
     "corsOrigin": ["http://192.168.2.3:8040", "http://10.0.0.2:8040", "http://127.0.0.1:8040", "http://localhost:8040"],
+    "powerStatusEndpoint" : "http://127.0.0.1:8089/status",
     "acOnUrl": "http://127.0.0.1:8090/off",
     "acOffUrl": "http://127.0.0.1:8090/on"
 }

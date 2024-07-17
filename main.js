@@ -5,25 +5,46 @@ const config = require('./config.json');
 
 const log = (...args) => console.log(new Date().toLocaleString(), ...args);
 
-const powerUpdates = ['powerOff', 'powerBackup', 'powerMain'];
+const getPowerState = async () => {
+    const res = await axios.get(config.powerStatusEndpoint);
+    const powerState = powerStates.indexOf(res.data.power);
+    if (powerState != -1) {
+        return powerState;
+    } else {
+        throw new Error(`Unexpected power state "${res.data.power}"`);
+    }
+};
+
 const powerOff = 0, powerBackup = 1, powerMain = 2;
 const powerStates = ['off', 'backup', 'main'];
-var powerState = powerStates.indexOf(process.argv[2]);
-if (powerState == -1)
-    powerState = powerOff;
-var isAcOn = process.argv[3] == 'on';
-var isAcDesiredOn = isAcOn;
-log('AC state:', isAcOn ? 'on' : 'off');
-log('Power state:', powerStates[powerState]);
+var powerState;
+const acOff = 0, acOn = 1, acRequested = 2;
+const acStates = ['off', 'on', 'requested'];
+var acState;
+
+const notify = () => {
+    config.notificationUrls.forEach(async url => {
+        try {
+            const res = await axios.post(url, {status: acStates[acState]});
+            log('Response code:', res.status);
+        } catch(e) {
+            if (e.response) {
+                log('Response code:', e.response.status);
+            } else {
+                log('Error:', e.message);
+            }
+        }
+    });
+};
 
 const switchAC = async on => {
-    const acState = on ? 'on' : 'off';
+    const acToggle = on ? 'on' : 'off';
     try {
         const res = await axios.post(on ? config.acOnUrl: config.acOffUrl);
-        log(`Switched AC ${acState}.`, 'Response code:', res.status);
+        log(`Switched AC ${acToggle}.`, 'Response code:', res.status);
         return true;
     } catch(e) {
-        const msg = `Failed to switch AC ${acState}.`;
+        const msg = `Failed to switch AC ${acToggle}.`;
         if (e.response) {
             log(msg, 'Response code:', e.response.status);
         } else {
@@ -34,16 +55,20 @@ const switchAC = async on => {
 };
 
 const onPowerOn = async () => {
-    if (isAcDesiredOn && !isAcOn) {
-        if (await switchAC(true))
-            isAcOn = true;
+    if (acState == acRequested) {
+        if (await switchAC(true)) {
+            acState = acOn;
+            notify();
+        }
     }
 };
 
 const onPowerOff = async () => {
-    if (isAcOn) {
-       if (await switchAC(false))
-            isAcOn = false;
+    if (acState == acOn) {
+       if (await switchAC(false)) {
+            acState = acRequested;
+            notify();
+       }
     }
 };
 
@@ -56,12 +81,21 @@ const onPowerUpdate = () => {
 };
 
 (async () => {
+    acState = acStates.indexOf(process.argv[2]);
+    if (acState == -1) {
+        acState = acOff;
+    }
+    log('AC state:', acStates[acState]);
+
+    powerState = await getPowerState();
+    log('Power state:', powerStates[powerState]);
+
     const app = express();
-    app.use(express.json(), cors({origin: config.corsOrigin}));
+    app.use(express.json(), cors({ origin: config.corsOrigin }));
     
     app.post('/power', (req, res) => {
-        log('Power notification:', req.body);
-        const newState = powerUpdates.indexOf(req.body.status);
+        log('Power change:', req.body);
+        const newState = powerStates.indexOf(req.body.status);
         if (newState != -1) {
             powerState = newState;
             onPowerUpdate();
@@ -70,22 +104,24 @@ const onPowerUpdate = () => {
     });
 
     app.get('/status', (req, res) => {
-        res.send({ power: powerStates[powerState], ac: isAcOn, acDesired: isAcDesiredOn });
+        res.send({ power: powerStates[powerState], ac: acStates[acState] });
     });
 
     app.post('/acon', async (req, res) => {
         log('AC on intent')
+        if (acState == acOff) {
+            acState = acRequested;
+            notify();
+        }
         let status = 'already';
-        isAcDesiredOn = true;
-        if (!isAcOn && powerState == powerMain) {
-            log('Switching is needed and possible')
+        if (acState != acOn && powerState == powerMain) {
+            log('Switching AC on')
             if (await switchAC(true)) {
-                isAcOn = true;
+                acState = acOn;
                 status = 'success';
-                log('Successfully switched on');
+                notify();
             } else {
                 status = 'fail'
-                log('Failed switching on');
             }
         } else if (powerState != powerMain) {
             status = 'scheduled';
@@ -97,16 +133,20 @@ const onPowerUpdate = () => {
     app.post('/acoff', async (req, res) => {
         log('AC off intent')
         let status = 'already';
-        isAcDesiredOn = false;
-        if (isAcOn) {
-            log('Switching is needed')
+        if (acState == acRequested) {
+            acState = acOff;
+            status = 'unscheduled';
+            log('Removed AC on intent');
+            notify();
+        }
+        if (acState == acOn) {
+            log('Switching AC off')
             if (await switchAC(false)) {
-                isAcOn = false;
+                acState = acOff;
                 status = 'success';
-                log('Successfully switched off');
+                notify();
             } else {
                 status = 'fail'
-                log('Failed switching off');
             }
         }
         res.send({status});
