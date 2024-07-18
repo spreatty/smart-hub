@@ -119,13 +119,11 @@ const onPowerUpdate = () => {
             } else {
                 status = 'fail'
             }
-        } else if (powerState != powerMain) {
+        } else if (acState == acOff && powerState != powerMain) {
+            acState = acRequested;
             status = 'scheduled';
             log('No power for AC yet');
-            if (acState == acOff) {
-                acState = acRequested;
-                notify();
-            }
+            notify();
         }
         res.send({status});
     });
