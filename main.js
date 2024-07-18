@@ -108,14 +108,10 @@ const onPowerUpdate = () => {
     });
 
     app.post('/acon', async (req, res) => {
-        log('AC on intent')
-        if (acState == acOff) {
-            acState = acRequested;
-            notify();
-        }
+        log('AC on intent');
         let status = 'already';
         if (acState != acOn && powerState == powerMain) {
-            log('Switching AC on')
+            log('Switching AC on');
             if (await switchAC(true)) {
                 acState = acOn;
                 status = 'success';
@@ -126,6 +122,10 @@ const onPowerUpdate = () => {
         } else if (powerState != powerMain) {
             status = 'scheduled';
             log('No power for AC yet');
+            if (acState == acOff) {
+                acState = acRequested;
+                notify();
+            }
         }
         res.send({status});
     });
@@ -138,8 +138,7 @@ const onPowerUpdate = () => {
             status = 'unscheduled';
             log('Removed AC on intent');
             notify();
-        }
-        if (acState == acOn) {
+        } else if (acState == acOn) {
             log('Switching AC off')
             if (await switchAC(false)) {
                 acState = acOff;
